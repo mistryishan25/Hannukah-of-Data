@@ -1,6 +1,23 @@
--- She moved in with him
--- bought something that comes in different colours
--- at the same date and around the same time.
+/*
+
+CONTEXT:
+- This query is designed to identify potential customers based on a previous order made by Emily (customerid = 8342).
+
+RESULT EXPECTATION:
+- The result of the query should provide the customer information for the person who have ordered items similar to the ones Emily purchased and were shipped within 10 minutes of her order.
+
+ASSUMPTIONS:
+- The relevant products are defined as products with a matching substring without the colour in the description.
+- The relevant items are those which were ordered by customers within the same date as Emily's order.
+- The suspicious orders would are the ones where the time difference between Emily's order and the other orders should be less than 10 minutes.
+
+APPROACH:
+- A temporary table named "emily_orders" is created to store all the details of Emily's orders.
+- Another temporary table named "relevant_items" with products matching(without the colour) the ones from emily orders.
+- A temporary table named "suspects_26" is created to store all the orders that have relevant items, are shipped within the same date as Emily's order.
+- A final temporary table named "final_suspect" is created to narrow down the list of suspicious orders to those shipped within 10 minutes of Emily's order.
+
+*/
 
 
 create temp table emily_orders as (
@@ -10,8 +27,6 @@ create temp table emily_orders as (
 		"desc",
 		substring("desc", 1, position(' (' in "desc")-1) as without_colour,
 		shipped
--- 		,shipped::date as e_date,
--- 		extract(hour from shipped) as e_hour
 	from 
 		orders o
 		join order_items i 
@@ -24,18 +39,16 @@ create temp table emily_orders as (
 )
 
 -- orders that contain the same kinds of items 
-
-
-
 create temp table relevant_items as ( 
 select 
 	sku,
 	"desc",
 	substring("desc", 1, position(' (' in "desc")-1) as wo_colour
 from products 
-where position('(' in "desc")>0
-and substring("desc", 1, position(' (' in "desc")-1) in
-(select without_colour from emily_orders)
+where 
+	position('(' in "desc")>0
+	and substring("desc", 1, position(' (' in "desc")-1) in
+	(select without_colour from emily_orders)
 except
 select 
 	sku, 
@@ -45,8 +58,7 @@ from emily_orders
 order by "desc"
 )
 
--- all the orders that have releavant items
--- same date
+-- all the orders that have releavant items and are on the same date
 create temp table suspects_26 as (
 select
 	o.orderid,
@@ -55,15 +67,15 @@ select
 	o.shipped
 
 from order_items oi
-join orders o 
-on oi.orderid = o.orderid
-where sku in (select sku from relevant_items)
-and shipped::date in (select distinct shipped::date from emily_orders)
+	join orders o 
+	on oi.orderid = o.orderid
+where 
+	sku in (select sku from relevant_items)
+	and shipped::date in (select distinct shipped::date from emily_orders)
 )
 
 
 -- Narrowing it down to a smaller number based on time
-
 create temp table final_suspect as (
 select 
 	distinct s.orderid,
@@ -71,45 +83,17 @@ select
 	s.customerid,
 	s.shipped::time - e.shipped::time as time_diff
 from suspects_26 s
-left join emily_orders e
-on s.shipped::date = e.shipped::date
-where s.sku in (select sku from relevant_items)
+	left join emily_orders e
+	on s.shipped::date = e.shipped::date
+where 
+	s.sku in (select sku from relevant_items)
 	and abs(extract (epoch from (s.shipped::time - e.shipped::time))) < 600
 )
 
-select * from customers where customerid in (select customerid from final_suspect)
-
-
--- let's see how many of these were on the same date?
-
---  possible_customers as (
--- 	select 
--- 	orders.orderid,
--- 	customerid,
--- 	orders.shipped::date,
--- 	extract(hour from orders.shipped) 
-	
--- 	from orders 
--- 	inner join relevant_orders ro 
--- 	on orders.orderid = ro.orderid
--- 	where 
--- 		orders.shipped::date in (select distinct date from emily_orders)
--- 		and extract(hour from orders.shipped) in (select distinct extract(hour from shipped) from emily_orders) 
--- )
-
--- select * from possible_customers
-
--- select * from emily_orders
-
-
--- select * from relevant_orders
-
-
--- select *
--- from customers 
--- where customerid in (select customerid from possible_customers)
-
--- the only boy here is micheal
+-- Getting information about the suspect
+select *
+from customers 
+where customerid in (select customerid from final_suspect)
 
 
 
