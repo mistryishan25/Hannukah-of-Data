@@ -1,7 +1,26 @@
--- Approach
--- Spell out the last name for number
--- Clean the data in the phone number
-	
+/*
+
+CONTEXT:
+- The puzzle requires us to find the contact information of the private investigator. This query is used to decode and derive phone numbers based on the name of the customer.  
+
+RESULT EXPECTATION:
+- The query is expected to return the customer info especially the original phone number for the customer whose phone number could be successfully decoded from their name.
+
+ASSUMPTIONS:
+- Query logic assumes that the phone numbers are encoded using a mapping based on the old numeric keypad of folding phones.
+- Data assumption is that the phone number is stored in the "phone" column of the "customers" table, and the customer's name is stored in the "name" column of the "customers" table. 
+- The query assumes that there are no null values and the name consists of just the first name and last name.
+- The original phone numbers in the "phone" column may contain dashes (-) that need to be removed before decoding the number.
+- The decoded phone number is expected to be a ten-digit number.
+
+APPROACH:
+- These set of queries extract and clean customer name, maps the letters in customers' first and last names to the corresponding numbers on an old numeric keypad, and compares the resulting phone number to each customer's actual phone number to find matches.
+
+*/
+
+
+
+-- cleaning the customers table
 create temp table clean_info as (
 	select
 		name,
@@ -38,7 +57,7 @@ where length(lastname) <= (select max(length(lastname)) from clean_info) and
 
 -- Create a mapping from numbers to alphabets
 	-- A is 65 so we use row_numbers to generate a char seq
-	-- PQRS - 7 AND WXYZ- 9 (Why tho?)
+	-- PQRS - 7 AND WXYZ- 9 
 	-- Change YZ-9, V-8, S-7   
 
 create temp table interim_seq as (
@@ -56,6 +75,7 @@ create temp table interim_seq as (
 		generate_series(0,25)/3 + 2 as int_map,
 		chr(generate_series(0,25)+65) as letters) as sub	
 );
+
 
 create temp table final_map as (
 	select 
@@ -76,7 +96,6 @@ create temp table char_pos as (
 );
 
 -- get the individual letters and the corresponding code
-
 create temp table coded_letters as (
 	select
 	distinct
@@ -85,12 +104,11 @@ create temp table coded_letters as (
 		phone_number,
 		n,
 		substring(lastname,n,1),
-	-- 	concate(code) over(group by lastname order by n) as phone,
 		key_int
 	from char_pos
 		cross join clean_info
 		right join final_map
-		-- the sep letters should match the code form mapping
+		-- the seperate letters should match the code form mapping
 			on letters = substring(lastname, n, 1)
 	where n between 0 and length(lastname) and 
 		length(lastname) = 10
@@ -98,6 +116,7 @@ create temp table coded_letters as (
 );
 
 
+create temp table final_suspect as (
 select 
 	customerid,
 	phone_number,
@@ -106,7 +125,7 @@ select
 from coded_letters
 group by customerid, phone_number
 having array_to_string(array_agg(key_int), '') = phone_number
-;
+);
 	
-select * from customers where customerid = 3188
+select * from customers where customerid in (select customerid from final_suspect)
 
