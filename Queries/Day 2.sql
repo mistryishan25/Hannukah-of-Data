@@ -1,7 +1,24 @@
--- Filter names with initials as JD
+/*
 
--- Does initials mean that only first name and last names are to be considered(i.e no middle names?)?
--- 	Assumption : I've considered middle names as not the part of an initial.
+CONTEXT: 
+- This SQL code is used to identify orders of a specific customer with initials JD who have purchased at least two items from a shopping list that includes cleaner, bagel, and coffee.
+
+RESULT EXPECTATION:
+- The expected result is to retrieve the customer information of a specific customer.
+
+ASSUMPTION:
+- The assumption is that the names table already exists with the necessary columns.
+- The shopping list only includes the products that have the corresponding category codes in their SKU.
+- The initials are just from the first name and the last name i.e. middle name is omitted.
+
+APPROACH:
+- First, a temporary table "names" is created to split the customer name into first, middle, and last names.
+- Then, a temporary table "suspects" is created to identify the customers with initials JD.
+- A temporary table "sus_order_items" is created to retrieve the relevant shopping list items.
+- Another temporary table "sus_orders" is created to identify the orders containing items from the above temp table.
+- Finally, the customer information of the identified customer is retrieved by joining the "suspects" and "orders" tables with the "customers" table. 
+
+*/
 
 
 create temp table names as (
@@ -32,18 +49,6 @@ create temp table suspects as (
 where initials = 'JD'
 );
 
--- shopping list should have "cleaner" and bagel and coffee
-select 
-	distinct substring(sku,1,3) as categories 
-from products
--- "KIT" - Kitchen
--- "HOM" = Home
--- "CMP" = Computer
--- "PET" = Pet accessories
--- "TOY" = Toys 
--- "DLI" - Daily
--- "COL" - Noah's collection
--- "BKY" - Bakery
 
 create temp table sus_order_items as (
 	select *
@@ -57,7 +62,6 @@ create temp table sus_order_items as (
 
 -- search for orders that contain order_items from above
 -- filter orders that contain at least two of the above items
-
 create temp table sus_orders as (
 	select 
 		orderid,
