@@ -1,3 +1,28 @@
+/*
+
+CONTEXT:
+- This SQL code is written to find the customer from Queens Village wearing ‘Noah’s Market’ sweatshirt who has purchased products that include cat food and jersey.
+
+RESULT EXPECTATION:
+- The expected result is to get the customer info for this person based on the hints given in the puzzle.
+
+ASSUMPTION:
+- The table 'customers' has the customer information, including the city, state, and zip code.
+- The table 'products' contains the product information, including the SKU code and description.
+- The table 'order_items' has the order item information, including the SKU and quantity.
+- The table 'orders' has the order information, including the customer ID and order ID.
+
+APPROACH:
+- Create a temporary table 'queens_customers' to store customers from Queens Village.
+- Select 10 products from each category using the 'products' table to get some idea.
+- Create a temporary table 'valid_sku' to store the SKUs that contain cat food and jersey.
+- Join the 'order_items,' 'orders,' and 'queens_customers' tables to get the customer information and the sum of their purchases, where the SKUs are in the 'valid_sku' table and the customer IDs are in the 'queens_customers' table.
+- Order the result by the sum of the purchases and select the highest one.
+
+*/
+
+
+
 -- A women from Queens Village wearing ‘Noah’s Market’ sweatshirt
 
 create temp table queens_customers as (
@@ -17,12 +42,6 @@ from(
 ) as sub
 where rn<10
 
-
--- just to be sure about our selection of COL item - Jersey 
-select 
-	distinct
-	split_part("desc", ' ', 2 ) 
-from products where substring(sku,1,3) in ('COL')
 
 -- find the products that have cat food and jersey  
 create temp table valid_sku as (
