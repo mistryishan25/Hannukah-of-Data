@@ -1,22 +1,3 @@
-/*
-
-CONTEXT:
-- The puzzle requires us to find the contact information of the private investigator. This query is used to decode and derive phone numbers based on the name of the customer.  
-
-RESULT EXPECTATION:
-- The query is expected to return the customer info especially the original phone number for the customer whose phone number could be successfully decoded from their name.
-
-ASSUMPTIONS:
-- Query logic assumes that the phone numbers are encoded using a mapping based on the old numeric keypad of folding phones.
-- Data assumption is that the phone number is stored in the "phone" column of the "customers" table, and the customer's name is stored in the "name" column of the "customers" table. 
-- The query assumes that there are no null values and the name consists of just the first name and last name.
-- The original phone numbers in the "phone" column may contain dashes (-) that need to be removed before decoding the number.
-- The decoded phone number is expected to be a ten-digit number.
-
-APPROACH:
-- These set of queries extract and clean customer name, maps the letters in customers' first and last names to the corresponding numbers on an old numeric keypad, and compares the resulting phone number to each customer's actual phone number to find matches.
-
-*/
 
 
 
